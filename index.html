@@ -289,14 +289,14 @@
     <div class="step-dot active"></div>
   </div>
   <div class="card">
-    <div class="label">Final question</div>
-    <h2>Will you say yes?</h2>
+    <div class="label" id="p5-label">Final question</div>
+    <h2 id="p5-question">Will you say yes?</h2>
   </div>
   <div id="yes-no-row">
-    <button class="btn btn-yes" id="yes-btn" onclick="goTo('page6', 5)">Yes</button>
+    <button class="btn btn-yes" id="yes-btn" onclick="goTo('page6')">Yes</button>
     <button class="btn btn-no"  id="no-btn"  onclick="moveNo()">No</button>
   </div>
-  <button class="btn btn-yes" id="big-yes-btn" onclick="goTo('page6', 5)">YES!</button>
+  <button class="btn btn-yes" id="big-yes-btn" onclick="goTo('page6')">YES!</button>
 </div>
 
 <!-- Page 6 -->
@@ -310,6 +310,14 @@
 
 <script>
   let noClicks = 0;
+
+  const noQuestions = [
+    { label: 'Final question',  text: 'Will you say yes?' },
+    { label: 'Are you sure?',   text: 'Come on... are you really sure? 🥺' },
+    { label: 'Think again!',    text: 'Pretty please? I\'m begging you 🙏' },
+    { label: 'Last chance...',  text: 'What if I said please with a cherry on top? 🍒' },
+    { label: 'One more time!',  text: 'Okay but actually though... yes or yes? 😭' },
+  ];
 
   function goTo(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -327,8 +335,14 @@
       return;
     }
 
+    // Update question text
+    const q = noQuestions[noClicks];
+    document.getElementById('p5-label').textContent    = q.label;
+    document.getElementById('p5-question').textContent = q.text;
+
+    // Move the No button to a random spot
     btn.style.position = 'fixed';
-    btn.style.zIndex = '9999';
+    btn.style.zIndex   = '9999';
 
     const margin = 80;
     const w = btn.offsetWidth  || 90;
