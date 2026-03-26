@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #ffe4ec 0%, #ffc2d4 40%, #ffb3c6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Floating blobs in background */
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::before {
+    width: 400px; height: 400px;
+    background: #ff8fab;
+    top: -100px; left: -100px;
+  }
+  body::after {
+    width: 350px; height: 350px;
+    background: #ffd6e0;
+    bottom: -80px; right: -80px;
+  }
+
+  .page {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    width: 100%;
+    position: absolute;
+    z-index: 1;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .page.active { display: flex; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Step indicator */
+  .step-indicator {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 28px;
+  }
+  .step-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.45);
+    transition: background 0.3s, transform 0.3s;
+  }
+  .step-dot.active {
+    background: white;
+    transform: scale(1.3);
+  }
+  .step-dot.done {
+    background: rgba(255,255,255,0.75);
+  }
+
+  /* Card */
+  .card {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1.5px solid rgba(255, 255, 255, 0.85);
+    border-radius: 28px;
+    padding: 52px 72px;
+    text-align: center;
+    box-shadow:
+      0 8px 32px rgba(255, 105, 135, 0.15),
+      0 2px 8px rgba(255,255,255,0.6) inset;
+    margin-bottom: 36px;
+    min-width: 340px;
+    max-width: 480px;
+    position: relative;
+  }
+
+  .card .label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #ff6b9d;
+    margin-bottom: 12px;
+  }
+
+  .card h2 {
+    font-size: 1.65rem;
+    font-weight: 700;
+    color: #3d1a2e;
+    line-height: 1.35;
+  }
+
+  /* Buttons */
+  .btn {
+    padding: 15px 44px;
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    letter-spacing: 0.03em;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .btn:hover  { transform: translateY(-2px); }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-next {
+    background: linear-gradient(135deg, #ff6b9d, #ff4d7d);
+    color: white;
+    box-shadow: 0 6px 20px rgba(255, 77, 125, 0.4);
+  }
+  .btn-next:hover { box-shadow: 0 10px 28px rgba(255, 77, 125, 0.5); }
+
+  .btn-yes {
+    background: linear-gradient(135deg, #56cf88, #34b96c);
+    color: white;
+    box-shadow: 0 6px 20px rgba(52, 185, 108, 0.4);
+  }
+  .btn-yes:hover { box-shadow: 0 10px 28px rgba(52, 185, 108, 0.5); }
+
+  .btn-no {
+    background: rgba(255,255,255,0.55);
+    color: #c0405e;
+    border: 2px solid rgba(192,64,94,0.3);
+    box-shadow: 0 3px 12px rgba(192,64,94,0.12);
+  }
+  .btn-no:hover { background: rgba(255,255,255,0.8); }
+
+  #no-btn {
+    position: relative;
+    transition: none;
+  }
+
+  /* Big YES button */
+  #big-yes-btn {
+    display: none;
+    margin-top: 28px;
+    padding: 20px 72px;
+    font-size: 1.5rem;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #56cf88, #34b96c);
+    color: white;
+    box-shadow: 0 8px 28px rgba(52, 185, 108, 0.5);
+    animation: bigPulse 0.8s ease-in-out infinite alternate;
+  }
+
+  @keyframes bigPulse {
+    from { transform: scale(1);    box-shadow: 0 8px 28px rgba(52,185,108,0.4); }
+    to   { transform: scale(1.06); box-shadow: 0 14px 40px rgba(52,185,108,0.65); }
+  }
+
+  /* Yes/No row */
+  #yes-no-row {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  /* Page 6 final */
+  .final-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border: 1.5px solid rgba(255,255,255,0.9);
+    border-radius: 32px;
+    padding: 64px 90px;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(255,105,135,0.18);
+    animation: popIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  .final-card .emoji { font-size: 3rem; margin-bottom: 16px; }
+
+  .final-card h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #3d1a2e;
+    margin-bottom: 10px;
+  }
+
+  .final-card p {
+    color: #a05070;
+    font-size: 1.05rem;
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<!-- Page 1 -->
+<div class="page active" id="page1">
+  <div class="step-indicator">
+    <div class="step-dot active"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+  </div>
+  <div class="card">
+    <div class="label">Question 1</div>
+    <h2>Question 1</h2>
+  </div>
+  <button class="btn btn-next" onclick="goTo('page2', 1)">Next</button>
+</div>
+
+<!-- Page 2 -->
+<div class="page" id="page2">
+  <div class="step-indicator">
+    <div class="step-dot done"></div>
+    <div class="step-dot active"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+  </div>
+  <div class="card">
+    <div class="label">Question 2 of 4</div>
+    <h2>Question 2</h2>
+  </div>
+  <button class="btn btn-next" onclick="goTo('page3', 2)">Next</button>
+</div>
+
+<!-- Page 3 -->
+<div class="page" id="page3">
+  <div class="step-indicator">
+    <div class="step-dot done"></div>
+    <div class="step-dot done"></div>
+    <div class="step-dot active"></div>
+    <div class="step-dot"></div>
+    <div class="step-dot"></div>
+  </div>
+  <div class="card">
+    <div class="label">Question 3 of 4</div>
+    <h2>Question 3</h2>
+  </div>
+  <button class="btn btn-next" onclick="goTo('page4', 3)">Next</button>
+</div>
+
+<!-- Page 4 -->
+<div class="page" id="page4">
+  <div class="step-indicator">
+    <div class="step-dot done"></div>
+    <div class="step-dot done"></div>
+    <div class="step-dot done"></div>
+    <div class="step-dot active"></div>
+    <div class="step-dot"></div>
+  </div>
+  <div class="card">
+    <div class="label">Question 4 of 4</div>
+    <h2>Question 4</h2>
+  </div>
+  <button class="btn btn-next" onclick="goTo('page5', 4)">Next</button>
+</div>
+
+<!-- Page 5 -->
+<div class="page" id="page5">
+  <div class="step-indicator">
+    <div class="step-dot done"></div>
+    <div class="step-dot done"></div>
+    <div class="step-dot done"></div>
+    <div class="step-dot done"></div>
+    <div class="step-dot active"></div>
+  </div>
+  <div class="card">
+    <div class="label">Final question</div>
+    <h2>Will you say yes?</h2>
+  </div>
+  <div id="yes-no-row">
+    <button class="btn btn-yes" id="yes-btn" onclick="goTo('page6', 5)">Yes</button>
+    <button class="btn btn-no"  id="no-btn"  onclick="moveNo()">No</button>
+  </div>
+  <button class="btn btn-yes" id="big-yes-btn" onclick="goTo('page6', 5)">YES!</button>
+</div>
+
+<!-- Page 6 -->
+<div class="page" id="page6">
+  <div class="final-card">
+    <div class="emoji">🎉</div>
+    <h1>You said yes!</h1>
+    <p>Thank you so much!</p>
+  </div>
+</div>
+
+<script>
+  let noClicks = 0;
+
+  function goTo(pageId) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(pageId).classList.add('active');
+  }
+
+  function moveNo() {
+    noClicks++;
+    const btn = document.getElementById('no-btn');
+
+    if (noClicks >= 5) {
+      btn.style.display = 'none';
+      document.getElementById('yes-no-row').style.display = 'none';
+      document.getElementById('big-yes-btn').style.display = 'inline-block';
+      return;
+    }
+
+    btn.style.position = 'fixed';
+    btn.style.zIndex = '9999';
+
+    const margin = 80;
+    const w = btn.offsetWidth  || 90;
+    const h = btn.offsetHeight || 50;
+    const x = margin + Math.random() * (window.innerWidth  - w - margin * 2);
+    const y = margin + Math.random() * (window.innerHeight - h - margin * 2);
+
+    btn.style.left = x + 'px';
+    btn.style.top  = y + 'px';
+  }
+</script>
+
+</body>
+</html>
